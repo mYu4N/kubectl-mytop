@@ -4,9 +4,11 @@ This is a simple CLI that provides an overview of the resource requests, limits,
 
 ## Installation
 Go binaries are automatically built with each release by [GoReleaser](https://github.com/goreleaser/goreleaser). These can be accessed on the GitHub [releases page](https://github.com/chlyyangwei/kubectl-mytop) for this project.
-
+```
 wget https://raw.githubusercontent.com/chlyyangwei/kubectl-mytop/master/kubectl-mytop -O /usr/local/bin/kubectl-mytop 
+
 chmod u+x /usr/local/bin/kubectl-mytop 
+```
 ## Usage
 By default, kubectl-mytop will output a list of nodes with the total CPU and Memory resource requests and limits for all the pods running on them. For clusters with more than one node, the first line will also include cluster wide totals. That output will look something like this:
 
