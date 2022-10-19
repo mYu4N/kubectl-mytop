@@ -1,65 +1,54 @@
 # kubectl-mytop
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/chlyyangwei/kubectl-mytop?v=1)](https://goreportcard.com/report/github.com/chlyyangwei/kubectl-mytop) [![CircleCI](https://circleci.com/gh/chlyyangwei/kubectl-mytop.svg?style=svg)](https://circleci.com/gh/chlyyangwei/kubectl-mytop)
-
 This is a simple CLI that provides an overview of the resource requests, limits, and utilization in a Kubernetes cluster. It attempts to combine the best parts of the output from `kubectl top` and `kubectl describe` into an easy to use CLI focused on cluster resources.
 
 ## Installation
-Go binaries are automatically built with each release by [GoReleaser](https://github.com/goreleaser/goreleaser). These can be accessed on the GitHub [releases page](https://github.com/chlyyangwei/kubectl-mytop/releases) for this project.
+Go binaries are automatically built with each release by [GoReleaser](https://github.com/goreleaser/goreleaser). These can be accessed on the GitHub [releases page](https://github.com/chlyyangwei/kubectl-mytop) for this project.
 
-### Homebrew
-This project can be installed with [Homebrew](https://brew.sh/):
-```
-brew tap chlyyangwei/tap
-brew install chlyyangwei/tap/kubectl-mytop
-```
-
-### Krew
-This project can be installed with [Krew](https://github.com/GoogleContainerTools/krew):
-```
-kubectl krew install resource-mytop
-```
-
+wget https://raw.githubusercontent.com/chlyyangwei/kubectl-mytop/master/kubectl-mytop -O /usr/local/bin/kubectl-mytop 
+chmod u+x /usr/local/bin/kubectl-mytop 
 ## Usage
 By default, kubectl-mytop will output a list of nodes with the total CPU and Memory resource requests and limits for all the pods running on them. For clusters with more than one node, the first line will also include cluster wide totals. That output will look something like this:
 
 ```
-kubectl-mytop
-
-NODE              CPU REQUESTS    CPU LIMITS    MEMORY REQUESTS    MEMORY LIMITS
-*                 560m (28%)      130m (7%)     572Mi (9%)         770Mi (13%)
-example-node-1    220m (22%)      10m (1%)      192Mi (6%)         360Mi (12%)
-example-node-2    340m (34%)      120m (12%)    380Mi (13%)        410Mi (14%)
+# kubectl mytop 
+NODE                              CPU REQUESTS   CPU LIMITS     MEMORY REQUESTS   MEMORY LIMITS
+*                                 5344m (0%)     12044m (0%)    6310Mi (0%)       18112Mi (0%)
+ap-southeast-5.192.168.0.144      2462m (61%)    7322m (183%)   2888Mi (20%)      10392Mi (72%)
+ap-southeast-5.192.168.1.124      2382m (59%)    4722m (118%)   2398Mi (16%)      7720Mi (53%)
+virtual-kubelet-ap-southeast-5a   500m (0%)      0Mi (0%)       1024Mi (0%)       0Mi (0%)
 ```
 
 ### Including Pods
 For more detailed output, kubectl-mytop can include pods in the output. When `-p` or `--pods` are passed to kubectl-mytop, it will include pod specific output that looks like this:
 
 ```
-kubectl-mytop --pods
-
-NODE              NAMESPACE     POD                   CPU REQUESTS    CPU LIMITS    MEMORY REQUESTS    MEMORY LIMITS
-*                 *             *                     560m (28%)      780m (38%)    572Mi (9%)         770Mi (13%)
-
-example-node-1    *             *                     220m (22%)      320m (32%)    192Mi (6%)         360Mi (12%)
-example-node-1    kube-system   metrics-server-lwc6z  100m (10%)      200m (20%)    100Mi (3%)         200Mi (7%)
-example-node-1    kube-system   coredns-7b5bcb98f8    120m (12%)      120m (12%)    92Mi (3%)          160Mi (5%)
-
-example-node-2    *             *                     340m (34%)      460m (46%)    380Mi (13%)        410Mi (14%)
-example-node-2    kube-system   kube-proxy-3ki7       200m (20%)      280m (28%)    210Mi (7%)         210Mi (7%)
-example-node-2    tiller        tiller-deploy         140m (14%)      180m (18%)    170Mi (5%)         200Mi (7%)
+# kubectl mytop  --pods -n default
+NODE                              POD                                      CPU REQUESTS   CPU LIMITS    MEMORY REQUESTS   MEMORY LIMITS
+*                                 *                                        1500m (0%)     2000m (0%)    1536Mi (0%)       1024Mi (0%)
+                                                                                                                          
+ap-southeast-5.192.168.0.144      *                                        250m (6%)      1000m (25%)   512Mi (3%)        512Mi (3%)
+ap-southeast-5.192.168.0.144      my-nettools-79b68d5d89-c6vzj             250m (6%)      1000m (25%)   512Mi (3%)        512Mi (3%)
+ap-southeast-5.192.168.0.144      sample-app-7cfb596f98-zbt7c              0Mi (0%)       0Mi (0%)      0Mi (0%)          0Mi (0%)
+                                                                                                                          
+ap-southeast-5.192.168.1.124      *                                        1250m (31%)    1000m (25%)   1024Mi (7%)       512Mi (3%)
+ap-southeast-5.192.168.1.124      aes-gotools-78f9cbc68c-j6528             250m (6%)      0Mi (0%)      512Mi (3%)        0Mi (0%)
+ap-southeast-5.192.168.1.124      nginx-deployment-basic-776544c85-8dp7h   1000m (25%)    1000m (25%)   512Mi (3%)        512Mi (3%)
+                                                                                                                          
+virtual-kubelet-ap-southeast-5a   *                                        0Mi (0%)       0Mi (0%)      0Mi (0%)          0Mi (0%)
+virtual-kubelet-ap-southeast-5a   nginx1                                   0Mi (0%)       0Mi (0%)      0Mi (0%)          0Mi (0%)
 ```
 
 ### Including Utilization
 To help understand how resource utilization compares to configured requests and limits, kubectl-mytop can include utilization metrics in the output. It's important to note that this output relies on [metrics-server](https://github.com/kubernetes-incubator/metrics-server) functioning correctly in your cluster. When `-u` or `--util` are passed to kubectl-mytop, it will include resource utilization information that looks like this:
 
 ```
-kubectl-mytop --util
-
-NODE              CPU REQUESTS    CPU LIMITS    CPU UTIL    MEMORY REQUESTS    MEMORY LIMITS   MEMORY UTIL
-*                 560m (28%)      130m (7%)     40m (2%)    572Mi (9%)         770Mi (13%)     470Mi (8%)
-example-node-1    220m (22%)      10m (1%)      10m (1%)    192Mi (6%)         360Mi (12%)     210Mi (7%)
-example-node-2    340m (34%)      120m (12%)    30m (3%)    380Mi (13%)        410Mi (14%)     260Mi (9%)
+# kubectl mytop  --util
+NODE                              CPU REQUESTS   CPU LIMITS     CPU UTIL     MEMORY REQUESTS   MEMORY LIMITS   MEMORY UTIL
+*                                 5344m (0%)     12044m (0%)    706m (0%)    6310Mi (0%)       18112Mi (0%)    14127Mi (0%)
+ap-southeast-5.192.168.0.144      2462m (61%)    7322m (183%)   563m (14%)   2888Mi (20%)      10392Mi (72%)   8542Mi (59%)
+ap-southeast-5.192.168.1.124      2382m (59%)    4722m (118%)   144m (3%)    2398Mi (16%)      7720Mi (53%)    5566Mi (38%)
+virtual-kubelet-ap-southeast-5a   500m (0%)      0Mi (0%)       0m (0%)      1024Mi (0%)       0Mi (0%)        19Mi (0%)
 ```
 
 ### Displaying Available Resources
@@ -67,30 +56,32 @@ To more clearly see the total available resources on the node it is possible to 
 to kubectl-mytop, which will give output in the following format
 
 ```
-kubectl-mytop --available
-
-NODE              CPU REQUESTS    CPU LIMITS    MEMORY REQUESTS    MEMORY LIMITS
-*                 560/2000m       130/2000m     572/5923Mi         770/5923Mi 
-example-node-1    220/1000m       10/1000m      192/3200Mi         360/3200Mi 
-example-node-2    340/1000m       120/1000m     380/2923Mi         410/2923Mi
+# kubectl mytop  --available
+NODE                              CPU REQUESTS            CPU LIMITS              MEMORY REQUESTS           MEMORY LIMITS
+*                                 192002656m/192008000m   191995956m/192008000m   671111196Mi/671117506Mi   671099394Mi/671117506Mi
+ap-southeast-5.192.168.0.144      1538m/4000m             -3322m/4000m            11495Mi/14383Mi           3991Mi/14383Mi
+ap-southeast-5.192.168.1.124      1618m/4000m             -722m/4000m             12085Mi/14483Mi           6763Mi/14483Mi
+virtual-kubelet-ap-southeast-5a   191999500m/192000000m   1Mi/1Mi                 671087616Mi/671088640Mi   671088640Mi/671088640Mi
 ```
 
 ### Including Pods and Utilization
 For more detailed output, kubectl-mytop can include both pods and resource utilization in the output. When `--util` and `--pods` are passed to kubectl-mytop, it will result in a wide output that looks like this:
 
 ```
-kubectl-mytop --pods --util
-
-NODE              NAMESPACE     POD                   CPU REQUESTS    CPU LIMITS   CPU UTIL     MEMORY REQUESTS    MEMORY LIMITS   MEMORY UTIL
-*                 *             *                     560m (28%)      780m (38%)   340m (17%)   572Mi (9%)         770Mi (13%)     470Mi (8%)
-
-example-node-1    *             *                     220m (22%)      320m (32%)   160m (16%)   192Mi (6%)         360Mi (12%)     210Mi (7%)
-example-node-1    kube-system   metrics-server-lwc6z  100m (10%)      200m (20%)   70m (7%)     100Mi (3%)         200Mi (7%)      120Mi (4%)
-example-node-1    kube-system   coredns-7b5bcb98f8    120m (12%)      120m (12%)   90m (9%)     92Mi (3%)          160Mi (5%)      90Mi (3%)
-
-example-node-2    *             *                     340m (34%)      460m (46%)   180m (18%)   380Mi (13%)        410Mi (14%)     260Mi (9%)
-example-node-2    kube-system   kube-proxy-3ki7       200m (20%)      280m (28%)   110m (11%)   210Mi (7%)         210Mi (7%)      120Mi (4%)
-example-node-2    tiller        tiller-deploy         140m (14%)      180m (18%)   70m (7%)     170Mi (6%)         200Mi (7%)      140Mi (5%)
+# kubectl mytop --pods --util -n default
+NODE                              POD                                      CPU REQUESTS   CPU LIMITS    CPU UTIL   MEMORY REQUESTS   MEMORY LIMITS   MEMORY UTIL
+*                                 *                                        1500m (0%)     2000m (0%)    0Mi (0%)   1536Mi (0%)       1024Mi (0%)     0Mi (0%)
+                                                                                                                                                     
+ap-southeast-5.192.168.0.144      *                                        250m (6%)      1000m (25%)   1m (0%)    512Mi (3%)        512Mi (3%)      18Mi (0%)
+ap-southeast-5.192.168.0.144      my-nettools-79b68d5d89-c6vzj             250m (6%)      1000m (25%)   1m (0%)    512Mi (3%)        512Mi (3%)      6Mi (0%)
+ap-southeast-5.192.168.0.144      sample-app-7cfb596f98-zbt7c              0Mi (0%)       0Mi (0%)      1m (0%)    0Mi (0%)          0Mi (0%)        13Mi (0%)
+                                                                                                                                                     
+ap-southeast-5.192.168.1.124      *                                        1250m (31%)    1000m (25%)   0m (0%)    1024Mi (7%)       512Mi (3%)      5Mi (0%)
+ap-southeast-5.192.168.1.124      aes-gotools-78f9cbc68c-j6528             250m (6%)      0Mi (0%)      0m (0%)    512Mi (3%)        0Mi (0%)        5Mi (0%)
+ap-southeast-5.192.168.1.124      nginx-deployment-basic-776544c85-8dp7h   1000m (25%)    1000m (25%)   0m (0%)    512Mi (3%)        512Mi (3%)      1Mi (0%)
+                                                                                                                                                     
+virtual-kubelet-ap-southeast-5a   *                                        0Mi (0%)       0Mi (0%)      0m (0%)    0Mi (0%)          0Mi (0%)        18Mi (0%)
+virtual-kubelet-ap-southeast-5a   nginx1                                   0Mi (0%)       0Mi (0%)      0m (0%)    0Mi (0%)          0Mi (0%)        18Mi (0%)
 ```
 
 It's worth noting that utilization numbers from pods will likely not add up to the total node utilization numbers. Unlike request and limit numbers where node and cluster level numbers represent a sum of pod values, node metrics come directly from metrics-server and will likely include other forms of resource utilization.
@@ -99,40 +90,40 @@ It's worth noting that utilization numbers from pods will likely not add up to t
 To highlight the nodes, pods, and containers with the highest metrics, you can sort by a variety of columns:
 
 ```
-kubectl-mytop --util --sort cpu.util
-
-NODE              CPU REQUESTS    CPU LIMITS    CPU UTIL    MEMORY REQUESTS    MEMORY LIMITS   MEMORY UTIL
-*                 560m (28%)      130m (7%)     40m (2%)    572Mi (9%)         770Mi (13%)     470Mi (8%)
-example-node-2    340m (34%)      120m (12%)    30m (3%)    380Mi (13%)        410Mi (14%)     260Mi (9%)
-example-node-1    220m (22%)      10m (1%)      10m (1%)    192Mi (6%)         360Mi (12%)     210Mi (7%)
+# kubectl mytop --util --sort cpu.util
+NODE                              CPU REQUESTS   CPU LIMITS     CPU UTIL     MEMORY REQUESTS   MEMORY LIMITS   MEMORY UTIL
+*                                 5344m (0%)     12044m (0%)    694m (0%)    6310Mi (0%)       18112Mi (0%)    14096Mi (0%)
+ap-southeast-5.192.168.0.144      2462m (61%)    7322m (183%)   566m (14%)   2888Mi (20%)      10392Mi (72%)   8511Mi (59%)
+ap-southeast-5.192.168.1.124      2382m (59%)    4722m (118%)   128m (3%)    2398Mi (16%)      7720Mi (53%)    5566Mi (38%)
+virtual-kubelet-ap-southeast-5a   500m (0%)      0Mi (0%)       0m (0%)      1024Mi (0%)       0Mi (0%)        19Mi (0%)
 ```
 
 ### Displaying Pod Count
 To display the pod count of each node and the whole cluster, you can pass **--pod-count** argument:
 ```shell
-$ kubectl-mytop --pod-count
-
-NODE           CPU REQUESTS   CPU LIMITS   MEMORY REQUESTS   MEMORY LIMITS   POD COUNT
-*              950m (2%)      200m (0%)    284Mi (0%)        284Mi (0%)      10/220
-minikube       850m (5%)      100m (0%)    231Mi (1%)        231Mi (1%)      8/110
-minikube-m02   100m (0%)      100m (0%)    53Mi (0%)         53Mi (0%)       2/110
+# kubectl mytop --pod-count
+NODE                              CPU REQUESTS   CPU LIMITS     MEMORY REQUESTS   MEMORY LIMITS   POD COUNT
+*                                 5344m (0%)     12044m (0%)    6310Mi (0%)       18112Mi (0%)    34/34646
+ap-southeast-5.192.168.0.144      2462m (61%)    7322m (183%)   2888Mi (20%)      10392Mi (72%)   17/2323
+ap-southeast-5.192.168.1.124      2382m (59%)    4722m (118%)   2398Mi (16%)      7720Mi (53%)    14/2323
+virtual-kubelet-ap-southeast-5a   500m (0%)      0Mi (0%)       1024Mi (0%)       0Mi (0%)        3/30000
 ```
 
 ### Filtering By Labels
 For more advanced usage, kubectl-mytop also supports filtering by pod, namespace, and/or node labels. The following examples show how to use these filters:
 
 ```
-kubectl-mytop --pod-labels app=nginx
-kubectl-mytop --namespace default
-kubectl-mytop --namespace-labels team=api
-kubectl-mytop --node-labels kubernetes.io/role=node
+kubectl mytop --pod-labels app=nginx
+kubectl mytop --namespace default
+kubectl mytop --namespace-labels team=api
+kubectl mytop --node-labels kubernetes.io/role=node
 ```
 
 ### JSON and YAML Output
 By default, kubectl-mytop will provide output in a table format. To view this data in JSON or YAML format, the output flag can be used. Here are some sample commands:
 ```
-kubectl-mytop --pods --output json
-kubectl-mytop --pods --containers --util --output yaml
+kubectl mytop --pods --output json
+kubectl mytop --pods --containers --util --output yaml
 ```
 
 ## Flags Supported
@@ -164,15 +155,7 @@ There are already some great projects out there that have similar goals.
 
 - [kube-resource-report](https://github.com/hjacobs/kube-resource-report): generates HTML/CSS report for resource requests and limits across multiple clusters.
 - [kubetop](https://github.com/LeastAuthority/kubetop): a CLI similar to top for Kubernetes, focused on resource utilization (not requests and limits).
-
-## Contributors
-
-Although this project was originally developed by [chlyyangwei](https://github.com/chlyyangwei), there have been some great contributions from others:
-
-- [endzyme](https://github.com/endzyme)
-- [justinbarrick](https://github.com/justinbarrick)
-- [Padarn](https://github.com/Padarn)
-- [nickatsegment](https://github.com/nickatsegment)
+- [kube-capacity)](https://github.com/robscott/kube-capacity) : a CLI similar to top for Kubernetes ,It attempts to combine the best parts of the output from kubectl top and kubectl describe into an easy to use CLI focused on cluster resources.
 
 ## License
 Apache License 2.0
