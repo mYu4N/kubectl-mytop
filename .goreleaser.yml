@@ -1,0 +1,46 @@
+builds:
+- env:
+  - CGO_ENABLED=0
+  goos:
+  - linux
+  - darwin
+  - windows
+  goarch:
+  - arm64
+  - amd64
+  - 386
+  goarm:
+  - 6
+  - 7
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+brews:
+- name: kubectl-mytop
+  tap:
+    # The token determines the release type (Github/Gitlab).
+    owner: chlyyangwei
+    name: homebrew-tap
+  folder: Formula
+  # Brew fails from multiple 32-bit arm versions.
+  # Specify which version should be used.
+  goarm: 6
+  homepage: https://github.com/chlyyangwei/kubectl-mytop
+  license: apache-2.0
+  description: kubectl-mytop provides an overview of the resource requests, limits, and utilization in a Kubernetes cluster
+  test: |
+    system "#{bin}/kubectl-mytop version"  
