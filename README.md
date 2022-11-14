@@ -1,6 +1,6 @@
 # kubectl-mytop
 
-这是一个方便查看集群资源的命令行工具，可以综合 `kubectl top` 和 `kubectl describe` 展示，如指定node后，可以查看这个node上所有的pod的request，limit，util
+Kubectl-mytop是一个基于metrics-server组件做指标展示的命令行工具，综合kubectl top以及kubectl describe的展示能力，可以提供Kubernetes集群中node以及pod资源请求、资源限制、资源利用率、以及pod数量做排序展示。Kubectl-mytop插件的目的在于弥补当前常用k8s监控工具的不足，便于如资源不均，调度不均，使用率不均等问题的分析定位。如指定node后，可以查看这个node上所有的pod的request，limit，util资源使用等信息并排序输出，支持指定不同namespace的相同的pod label的资源展示，以及过滤指定节点池id的资源展示
 
 ## 安装
 ```
@@ -76,7 +76,7 @@ cn-beijing.192.168.88.243  | 2035m (50%)   | 12200m (305%)  | 352m (8%)    | 261
 ```
 
 ### 支持先是可用资源
-使用  --available 可以查看节点可用资源，有vk节点是可能会不太准确
+使用  --available 可以查看节点可用资源，对规格感知及vk的节点时可能会不太准确
 
 ```
  % kubectl mytop  --available
@@ -140,10 +140,29 @@ cn-beijing.192.168.88.243  | 2035m (50%)   | 12200m (305%)  | 2611Mi (40%)     |
 ```
 
 ### 支持使用label过滤想要的资源
-mytop还支持pod，namespace，node的标签来过滤，如下所示:
+mytop还支持pod，namespace，node的标签来过滤，如不同的namespace但是相同的pod label，可以汇聚展示，也可以指定node的节点池id作为label过滤，如下所示:
 
 ```
-kubectl mytop --pod-labels app=nginx
+% kubectl mytop -p -u -l app=nginx
+NODE                       | NAMESPACE  | POD                                      | CPU REQUESTS  | CPU LIMITS  | CPU UTIL     | MEMORY REQUESTS  | MEMORY LIMITS  | MEMORY UTIL
+*                          | *          | *                                        | 500m (1%)     | 500m (1%)   | 3329m (9%)   | 0Mi (0%)         | 0Mi (0%)       | 32565Mi (47%)
+                           |            |                                          |               |             |              |                  |                | 
+cn-beijing.192.168.0.17    | *          | *                                        | 0Mi (0%)      | 0Mi (0%)    | 383m (10%)   | 0Mi (0%)         | 0Mi (0%)       | 4995Mi (77%)
+                           |            |                                          |               |             |              |                  |                | 
+cn-beijing.192.168.0.246   | *          | *                                        | 0Mi (0%)      | 0Mi (0%)    | 812m (20%)   | 0Mi (0%)         | 0Mi (0%)       | 4095Mi (63%)
+                           |            |                                          |               |             |              |                  |                | 
+cn-beijing.192.168.66.175  | *          | *                                        | 0Mi (0%)      | 0Mi (0%)    | 160m (4%)    | 0Mi (0%)         | 0Mi (0%)       | 3959Mi (61%)
+                           |            |                                          |               |             |              |                  |                | 
+cn-beijing.192.168.88.154  | *          | *                                        | 500m (6%)     | 500m (6%)   | 209m (2%)    | 0Mi (0%)         | 0Mi (0%)       | 5826Mi (40%)
+cn-beijing.192.168.88.154  | default    | nginx-deployment-basic-7db987c47c-vz6bn  | 0Mi (0%)      | 0Mi (0%)    | 0Mi (0%)     | 0Mi (0%)         | 0Mi (0%)       | 0Mi (0%)
+cn-beijing.192.168.88.154  | fanqinhe   | nginx-deployment-basic-7fbb7b675d-vtb6q  | 500m (6%)     | 500m (6%)   | 0Mi (0%)     | 0Mi (0%)         | 0Mi (0%)       | 0Mi (0%)
+                           |            |                                          |               |             |              |                  |                | 
+cn-beijing.192.168.88.156  | *          | *                                        | 0Mi (0%)      | 0Mi (0%)    | 1487m (19%)  | 0Mi (0%)         | 0Mi (0%)       | 8593Mi (60%)
+                           |            |                                          |               |             |              |                  |                | 
+cn-beijing.192.168.88.243  | *          | *                                        | 0Mi (0%)      | 0Mi (0%)    | 280m (7%)    | 0Mi (0%)         | 0Mi (0%)       | 5099Mi (78%)
+                           |            |                                          |               |             |              |                  |                | 
+cn-beijing.192.168.88.4    | *          | *                                        | 0Mi (0%)      | 0Mi (0%)    | 0Mi (0%)     | 0Mi (0%)         | 0Mi (0%)       | 0Mi (0%)
+
 kubectl mytop --namespace default
 kubectl mytop --namespace-labels app=ingress
 kubectl mytop --node-labels kubernetes.io/role=node
@@ -152,16 +171,27 @@ NODE                       | NAMESPACE    | POD                                 
                            |              |                                                         |               |              |            |                  |                | 
 cn-beijing.192.168.88.154  | *            | *                                                       | 3055m (39%)   | 6600m (84%)  | 226m (2%)  | 1951Mi (13%)     | 7936Mi (55%)   | 5600Mi (39%)
 cn-beijing.192.168.88.154  | kube-system  | ack-node-problem-detector-daemonset-nwvxd               | 100m (1%)     | 1000m (12%)  | 59m (0%)   | 200Mi (1%)       | 1024Mi (7%)    | 41Mi (0%)
-cn-beijing.192.168.88.154  | monitoring   | ack-prometheus-operator-prometheus-node-exporter-fhzrx  | 0Mi (0%)      | 0Mi (0%)     | 2m (0%)    | 0Mi (0%)         | 0Mi (0%)       | 25Mi (0%)
-cn-beijing.192.168.88.154  | default      | aestools-79999865cc-w2rsd                               | 250m (3%)     | 0Mi (0%)     | 0m (0%)    | 512Mi (3%)       | 0Mi (0%)       | 2Mi (0%)
-cn-beijing.192.168.88.154  | kube-system  | appcenter-7c7bbb5f76-d7dxf                              | 0Mi (0%)      | 0Mi (0%)     | 1m (0%)    | 0Mi (0%)         | 0Mi (0%)       | 14Mi (0%)
-cn-beijing.192.168.88.154  | default      | cpu-static-5d88d58877-j9jvl                             | 2000m (25%)   | 2000m (25%)  | 0m (0%)    | 512Mi (3%)       | 512Mi (3%)     | 2Mi (0%)
-cn-beijing.192.168.88.154  | kube-system  | csi-plugin-tznkk                                        | 130m (1%)     | 2000m (25%)  | 1m (0%)    | 176Mi (1%)       | 4096Mi (28%)   | 71Mi (0%)
-cn-beijing.192.168.88.154  | kube-system  | kube-proxy-worker-qjm5c                                 | 0Mi (0%)      | 0Mi (0%)     | 6m (0%)    | 0Mi (0%)         | 0Mi (0%)       | 51Mi (0%)
-cn-beijing.192.168.88.154  | kube-system  | logtail-ds-6t6sp                                        | 100m (1%)     | 500m (6%)    | 5m (0%)    | 256Mi (1%)       | 1024Mi (7%)    | 92Mi (0%)
-cn-beijing.192.168.88.154  | kube-system  | nginx-ingress-controller-57cb45dd78-l5gx2               | 100m (1%)     | 0Mi (0%)     | 4m (0%)    | 90Mi (0%)        | 0Mi (0%)       | 309Mi (2%)
+......
 cn-beijing.192.168.88.154  | kube-system  | node-local-dns-nnbjc                                    | 25m (0%)      | 0Mi (0%)     | 1m (0%)    | 5Mi (0%)         | 1024Mi (7%)    | 22Mi (0%)
 cn-beijing.192.168.88.154  | kube-system  | terway-eniip-m9877                                      | 350m (4%)     | 1100m (14%)  | 2m (0%)    | 200Mi (1%)       | 256Mi (1%)     | 169Mi (1%)
+
+%  kubectl mytop -p -u --node-labels alibabacloud.com/nodepool-id=np288d2e8b77a3485b86461f64a60dc438
+NODE                       | NAMESPACE            | POD                                                              | CPU REQUESTS  | CPU LIMITS     | CPU UTIL     | MEMORY REQUESTS  | MEMORY LIMITS         | MEMORY UTIL
+*                          | *                    | *                                                                | 9945m (63%)   | 51200m (328%)  | 2381m (15%)  | 12888Mi (47%)    | 71285Mi (262%)        | 17649Mi (64%)
+                           |                      |                                                                  |               |                |              |                  |                       | 
+cn-beijing.192.168.0.17    | *                    | *                                                                | 2475m (65%)   | 16000m (421%)  | 393m (10%)   | 3995Mi (61%)     | 25354Mi (391%)        | 4981Mi (76%)
+cn-beijing.192.168.0.17    | kube-system          | ack-node-local-dns-admission-controller-846bcf75dc-4tsmw         | 100m (2%)     | 1000m (26%)    | 1m (0%)      | 100Mi (1%)       | 1024Mi (15%)          | 20Mi (0%)
+....
+cn-beijing.192.168.0.17    | kube-system          | terway-eniip-nzbg4                                               | 350m (9%)     | 1100m (28%)    | 4m (0%)      | 200Mi (3%)       | 256Mi (3%)            | 175Mi (2%)
+                           |                      |                                                                  |               |                |              |                  |                       | 
+cn-beijing.192.168.0.246   | *                    | *                                                                | 2855m (71%)   | 11100m (277%)  | 561m (14%)   | 3307Mi (51%)     | 13532Mi (208%)        | 4091Mi (63%)
+.....
+cn-beijing.192.168.0.246   | kube-system          | terway-eniip-lm2sn                                               | 350m (8%)     | 1100m (27%)    | 3m (0%)      | 200Mi (3%)       | 256Mi (3%)            | 121Mi (1%)
+                           |                      |                                                                  |               |                |              |                  |                       | 
+cn-beijing.192.168.88.156  | *                    | *                                                                | 4615m (59%)   | 24100m (308%)  | 1429m (18%)  | 5586Mi (39%)     | 32399Mi (227%)        | 8578Mi (60%)
+cn-beijing.192.168.88.156  | kube-system          | ack-node-local-dns-admission-controller-846bcf75dc-z7cfz         | 100m (1%)     | 1000m (12%)    | 1m (0%)      | 100Mi (0%)       | 1024Mi (7%)           | 16Mi (0%)
+......
+cn-beijing.192.168.88.156  | default              | yibei-echoserver-dc9f9b99c-c8z6r                                 | 250m (3%)     | 0Mi (0%)       | 1m (0%)      | 512Mi (3%)       | 0Mi (0%)              | 3Mi (0%)
 ```
 
 ### 支持的输出格式
@@ -193,7 +223,7 @@ kubectl mytop --pods --containers --util --output yaml
 ```
 
 ## 依赖
-所有指标来源依赖 [metrics-server](https://github.com/kubernetes-incubator/metrics-server) ，需要具备metric-server的部署
+所有指标来源依赖 [metrics-server](https://github.com/kubernetes-incubator/metrics-server) ，需要集群内有metric-server的部署，以及使用的kubeconfig具备metrics的权限
 
 ## 类似项目
 以下项目有类似的功能，具体信息可自行打开观看
